@@ -1,7 +1,14 @@
 {
   "10": {
     "inputs": {
-      "text": ""
+      "text": [
+        "29",
+        0
+      ],
+      "clip": [
+        "23",
+        1
+      ]
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
@@ -12,7 +19,7 @@
     "inputs": {
       "text": "bad quality, worst quality, worst detail, sketch, censor, text, watermark, bad anatomy, bad hands, missing fingers, extra digits, fewer digits, extra ears, duplicate, multiple limbs, deformed, disfigured, mutated, poorly drawn face, poorly drawn hands, poorly drawn feet",
       "clip": [
-        "26",
+        "23",
         1
       ]
     },
@@ -35,7 +42,7 @@
   "18": {
     "inputs": {
       "add_noise": "enable",
-      "noise_seed": 810056877661530,
+      "noise_seed": 0,
       "steps": 20,
       "cfg": 6,
       "sampler_name": "euler_ancestral",
@@ -44,7 +51,7 @@
       "end_at_step": 10000,
       "return_with_leftover_noise": "disable",
       "model": [
-        "26",
+        "23",
         0
       ],
       "positive": [
@@ -106,25 +113,6 @@
       "title": "Загрузить сheckpoint"
     }
   },
-  "26": {
-    "inputs": {
-      "lora_name": "Marin_Kitagawa.safetensors",
-      "strength_model": 0.6,
-      "strength_clip": 0.6,
-      "model": [
-        "23",
-        0
-      ],
-      "clip": [
-        "23",
-        1
-      ]
-    },
-    "class_type": "LoraLoader",
-    "_meta": {
-      "title": "Загрузить LoRA"
-    }
-  },
   "28": {
     "inputs": {
       "image": "Швыбзик.jpg"
@@ -136,15 +124,12 @@
   },
   "29": {
     "inputs": {
-      "string_a": [
-        "30",
-        0
-      ],
+      "string_a": "%prompt%, absurdres, amazing quality, very aesthetic, perfect anatomy, intricate details",
       "string_b": [
-        "34",
+        "33",
         0
       ],
-      "delimiter": ", "
+      "delimiter": ""
     },
     "class_type": "StringConcatenate",
     "_meta": {
@@ -153,8 +138,8 @@
   },
   "30": {
     "inputs": {
-      "general_threshold": 0.35,
-      "character_threshold": 0.45,
+      "general_threshold": 0.5,
+      "character_threshold": 0.5,
       "drop_overlap": false,
       "image": [
         "28",
@@ -169,44 +154,13 @@
   "33": {
     "inputs": {
       "source": [
-        "35",
+        "30",
         0
       ]
     },
     "class_type": "PreviewAny",
     "_meta": {
       "title": "Предпросмотр любого"
-    }
-  },
-  "34": {
-    "inputs": {
-      "model_name": "wd-eva02-large-tagger-v3",
-      "dtype": "auto",
-      "general_threshold": 0.3,
-      "character_threshold": 0.75,
-      "add_rating": false,
-      "exclude_tags": "",
-      "batch_size": 4,
-      "image": [
-        "28",
-        0
-      ]
-    },
-    "class_type": "WDTimmTagger",
-    "_meta": {
-      "title": "WD Timm Tagger"
-    }
-  },
-  "35": {
-    "inputs": {
-      "tags": [
-        "29",
-        0
-      ]
-    },
-    "class_type": "ImgUtilsDedup",
-    "_meta": {
-      "title": "Imgutils Deduplicate Tags"
     }
   }
 }

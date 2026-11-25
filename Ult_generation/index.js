@@ -190,16 +190,74 @@ function collectStrings(value, result = []) {
     return result;
 }
 
+// Вспомогательная функция для нормализации одного тега
+function normalizeTag(tag) {
+    return tag.trim()
+        .replace(/\s+/g, '_') // Заменяем пробелы на подчеркивания
+        .replace(/:+/g, ':')  // Убираем двойные двоеточия
+        .replace(/^_+|_+$/g, '') // Убираем подчеркивания в начале и конце
+        .toLowerCase();
+}
+
 function extractTags(entry) {
     const outputs = entry?.outputs || {};
+    let allText = "";
+    
+    // Собираем все строки в один текст
     const candidates = [...collectStrings(outputs[ANALYZE_NODE_ID]), ...collectStrings(outputs)];
-    const unique = [...new Set(candidates.map(text => text.trim()).filter(Boolean))];
-    if (unique.length === 0) return null;
-    unique.sort((a, b) => {
-        const score = text => (text.match(/[,，\n]/g) || []).length * 100 + text.length;
-        return score(b) - score(a);
-    });
-    return unique[0];
+    for (const text of candidates) {
+        allText += text + ", ";
+    }
+
+    if (!allText.trim()) return null;
+
+    // Разбиваем на отдельные теги по запятым
+    const rawTags = allText.split(/[,，\n]/);
+    const uniqueTags = new Set();
+
+    // Ключевые слова, которые отправляем в КОНЕЦ
+    const tailKeywords = ['hair', 'eyes', 'eyebrows', 'bangs', 'braid', 'twintails', 'ponytail', 'ahoge', 'nail', 'nails', 'nail_polish'];
+
+    // Ключевые слова, которые УДАЛЯЕМ (мусор и цензура)
+    const removeKeywords = [
+        'artist', 'patreon', 'twitter', 'web_address', 'username', 'watermark', 'signature', 'logo', 'copyright',
+        'censored', 'censor', 'mosaic', 'bar_censor', 'pixelated' // <-- Добавлены теги цензуры
+    ];
+
+    const normalTags = [];
+    const tailTags = [];
+
+    for (let tag of rawTags) {
+        let cleanTag = normalizeTag(tag);
+        if (!cleanTag) continue;
+        
+        // Убираем теги рейтинга
+        if (cleanTag.startsWith('rating:')) continue;
+
+        // Убираем мусорные теги и цензуру
+        if (removeKeywords.some(keyword => cleanTag.includes(keyword))) continue;
+
+        if (uniqueTags.has(cleanTag)) continue;
+        uniqueTags.add(cleanTag);
+
+        // Проверяем, относится ли тег к "хвосту" (волосы, глаза, ногти)
+        if (tailKeywords.some(keyword => cleanTag.includes(keyword))) {
+            tailTags.push(cleanTag);
+        } else {
+            normalTags.push(cleanTag);
+        }
+    }
+
+    // Сортируем обычные теги по длине (чтобы длинные были впереди)
+    normalTags.sort((a, b) => b.length - a.length);
+    
+    // Сортируем теги хвоста по алфавиту для удобства
+    tailTags.sort();
+
+    // Склеиваем: сначала обычные, потом хвост
+    const finalTags = [...normalTags, ...tailTags];
+    
+    return finalTags.join(", ");
 }
 
 function findMessageTextarea() {
@@ -232,8 +290,16 @@ function buildGenerateWorkflow({ tags, checkpoint, lora }) {
     };
 
     if (lora) {
-        // LoRA strength increased to 0.75
-        wf["26"] = { "inputs": { "lora_name": lora, "strength_model": 0.75, "strength_clip": 0.75, "model": ["23", 0], "clip": ["23", 1] }, "class_type": "LoraLoader" };
+        wf["26"] = { 
+            "inputs": { 
+                "lora_name": lora, 
+                "strength_model": 0.7, 
+                "strength_clip": 0.7, 
+                "model": ["23", 0], 
+                "clip": ["23", 1] 
+            }, 
+            "class_type": "LoraLoader" 
+        };
         wf["10"].inputs.clip = ["26", 1];
         wf["11"].inputs.clip = ["26", 1];
         wf["18"].inputs.model = ["26", 0];
@@ -330,11 +396,9 @@ function pickFile() {
 // MODAL WINDOW (Absolute positioning to prevent mobile keyboard jumping)
 function promptForText(title, placeholder = "Describe what you want to see...", initialValue = "") {
     return new Promise((resolve) => {
-        // Создаем подложку на весь экран
         const overlay = document.createElement("div");
         overlay.style.cssText = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 99999; overflow-y: auto; -webkit-overflow-scrolling: touch;";
 
-        // Создаем само окно, привязанное к верху подложки
         const modal = document.createElement("div");
         modal.style.cssText = "position: relative; margin: 20px auto; width: 95%; max-width: 600px; background: #1a1a1a; padding: 15px; border-radius: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);";
 
@@ -365,10 +429,8 @@ function promptForText(title, placeholder = "Describe what you want to see...", 
         overlay.appendChild(modal);
         document.body.appendChild(overlay);
         
-        // Фокусируемся на тексте
         setTimeout(() => textarea.focus(), 100);
 
-        // Закрытие по клику на пустое место
         overlay.addEventListener("click", (e) => {
             if (e.target === overlay) {
                 document.body.removeChild(overlay);
